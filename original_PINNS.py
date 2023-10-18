@@ -43,11 +43,6 @@ def loss_function(y_true, y_pred):
         dphi_dx = t2.gradient(phi_pred, x)
     d2phi_dx2 = t1.gradient(dphi_dx, x)
 
-    if d2phi_dx2 is not None:
-        print("d2_phi_dx2:", d2phi_dx2.numpy())
-    else:
-        print("Second derivative = None")
-
     # Residual loss (from eq. - simplify?)
     L_residual = -D * d2phi_dx2 + Sigma_a * phi_pred - nu_Sigma_f * phi_pred - S
 
@@ -108,5 +103,8 @@ batch_size = 32
 
 history = model.fit(x_train, phi_train_noisy, epochs=num_epochs, batch_size=batch_size)
 
-
-print(history)
+plt.plot(history.history['loss'])
+plt.title('Model Loss over Time')
+plt.xlabel('Epoch')
+plt.ylabel('Loss (MAE)')
+plt.show()
