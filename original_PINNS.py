@@ -89,6 +89,14 @@ def generate_training_data(x):
 
     return x, phi_true
 
+# Function for plotting loss over epochs
+def loss_plotter():
+    plt.plot(history.history['loss'])
+    plt.title('Model Loss over Time')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss (MAE)')
+    plt.show()
+
 x_train, phi_train_true = generate_training_data(x)
 
 # added noise for simulation sake
@@ -103,8 +111,5 @@ batch_size = 32
 
 history = model.fit(x_train, phi_train_noisy, epochs=num_epochs, batch_size=batch_size)
 
-plt.plot(history.history['loss'])
-plt.title('Model Loss over Time')
-plt.xlabel('Epoch')
-plt.ylabel('Loss (MAE)')
-plt.show()
+loss_plotter()
+
