@@ -8,6 +8,7 @@ import os
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
+# Want to review the layers and also activation function
 
 def diffusion_PINN():
     model = tf.keras.Sequential([
@@ -29,11 +30,11 @@ model = diffusion_PINN()
 
 # Loss function
 def loss_function(y_true, y_pred):
-    # Coefficients/constants (change if necessary)
+    # Coefficients/constants (change if necessary) - maybe should be defined globally
     D = 1.0  # Diffusion coefficient
     Sigma_a = 0.5  # Absorption cross-section
     nu_Sigma_f = 0.2  # Fission-related term
-    S = 2.0  # Source term 
+    S = 2.0  # Source term - started with no net neutron source
 
     x = tf.constant(x_train, dtype=tf.float32)
 
@@ -51,17 +52,12 @@ def loss_function(y_true, y_pred):
 
     # Boundary condition loss
 
-    # Neumann boundary condition at x = 0 (left)
-    L_residual += D * dphi_dx
+    # Boundary condition phi(a) = 0
+    L_residual += phi_pred
 
-    # Neumann boundary condition at x = L (right)
-    L_residual -= D * dphi_dx
-
-    # Reflective boundary condition at x = 0 (left) --- Should this be derivative or simply L_residual += phi_pred
-    L_residual += 2.0 * D * dphi_dx
-
-    # Reflective boundary condition at x = L (right)
-    L_residual -= 2.0 * D * dphi_dx
+    # J = derivative of phi (current)
+    # This is boundary condition J+=1/2*S
+    L_residual += dphi_dx - 0.5 * S
 
     # MSE of residual
     mse_residual = tf.reduce_mean(tf.square(L_residual))
@@ -78,7 +74,7 @@ model.compile(loss=loss_function, optimizer='adam', run_eagerly=True)
 D = 1.0           # Diffusion coefficient
 Sigma_a = 0.5     # Absorption cross-section
 nu_Sigma_f = 0.2  # Fission-related term
-S = 2           # Source term - set as 2 for now
+S = 2.0           # Source term - set as 2 for now
 L = 10.0          # Length of the domain
 
 # x is number of points for data (10 evenly spaced 1m apart for now)
@@ -97,7 +93,7 @@ x_train, phi_train_true = generate_training_data(x)
 
 
 # Train the model
-num_epochs = 100  # YChange if necessary ~ did 1000 took roughly 1.5 hrs set as 10 for now
+num_epochs = 1000  # YChange if necessary ~ did 1000 took roughly 1.5 hrs set as 10 for now
 batch_size = 32
 
 history = model.fit(x_train, phi_train_true, epochs=num_epochs, batch_size=batch_size)
@@ -107,7 +103,9 @@ def loss_plotter():
     plt.plot(history.history['loss'])
     plt.title('Model Loss over Time')
     plt.xlabel('Epoch')
-    plt.ylabel('Loss (MAE)')
+    plt.ylabel('Loss (MSE)')
     plt.show()
 
 loss_plotter()
+
+
