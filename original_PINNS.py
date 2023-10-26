@@ -33,7 +33,7 @@ def loss_function(y_true, y_pred):
     D = 1.0  # Diffusion coefficient
     Sigma_a = 0.5  # Absorption cross-section
     nu_Sigma_f = 0.2  # Fission-related term
-    S = 0.0  # Source term - started with no net neutron source
+    S = 2.0  # Source term 
 
     x = tf.constant(x_train, dtype=tf.float32)
 
