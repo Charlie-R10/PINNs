@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()
+import os
+
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
 def diffusion_PINN():
@@ -75,21 +78,31 @@ model.compile(loss=loss_function, optimizer='adam', run_eagerly=True)
 D = 1.0           # Diffusion coefficient
 Sigma_a = 0.5     # Absorption cross-section
 nu_Sigma_f = 0.2  # Fission-related term
-S = 0.0           # Source term
+S = 2           # Source term - set as 2 for now
 L = 10.0          # Length of the domain
 
-# Define the number of training points and the domain discretization
-num_points = 1000
-x = np.linspace(0, L, num_points)  # Spatial domain
+# x is number of points for data (10 evenly spaced 1m apart for now)
+num_points = 10
+x = np.linspace(0, L, num_points)
 
-# Generate training data - replace this with solution
+# Generate training data
 def generate_training_data(x):
-    # Calculate the true neutron flux based on the diffusion equation --- need to insert actual solution for neutron flux just used sin for now
-    phi_true = np.exp(x)
+    # Calculate the true neutron flux based on the diffusion equation pg 51 in Stacey
+    phi_true = 4*S*((np.sinh(x)/L)/(np.sinh(x/L)+((2*D)/L)*np.cosh(x/L)))
 
     return x, phi_true
 
-# Function for plotting loss over epochs
+x_train, phi_train_true = generate_training_data(x)
+
+
+
+# Train the model
+num_epochs = 100  # YChange if necessary ~ did 1000 took roughly 1.5 hrs set as 10 for now
+batch_size = 32
+
+history = model.fit(x_train, phi_train_true, epochs=num_epochs, batch_size=batch_size)
+
+
 def loss_plotter():
     plt.plot(history.history['loss'])
     plt.title('Model Loss over Time')
@@ -97,19 +110,4 @@ def loss_plotter():
     plt.ylabel('Loss (MAE)')
     plt.show()
 
-x_train, phi_train_true = generate_training_data(x)
-
-# added noise for simulation sake
-noise_level = 0.01
-noise = noise_level * np.random.randn(num_points)
-phi_train_noisy = phi_train_true + noise
-
-
-# Train the model
-num_epochs = 10  # YChange if necessary ~ did 1000 took roughly 1.5 hrs set as 10 for now
-batch_size = 32
-
-history = model.fit(x_train, phi_train_noisy, epochs=num_epochs, batch_size=batch_size)
-
 loss_plotter()
-
