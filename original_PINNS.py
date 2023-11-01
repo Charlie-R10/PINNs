@@ -1,5 +1,4 @@
 import tensorflow as tf
-from scipy.io import loadmat
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.python.ops.numpy_ops import np_config
@@ -10,6 +9,8 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 # Want to review the layers and also activation function
 
+
+# Defining layer
 def diffusion_PINN():
     model = tf.keras.Sequential([
         tf.keras.layers.Dense(20, activation='tanh', input_shape=(1,))
@@ -24,8 +25,11 @@ def diffusion_PINN():
 
     return model
 
+
 # Create an instance of model
 model = diffusion_PINN()
+normal_neural_net = diffusion_PINN()
+
 
 
 # Loss function
@@ -47,7 +51,7 @@ def loss_function(y_true, y_pred):
         dphi_dx = t2.gradient(phi_pred, x)
     d2phi_dx2 = t1.gradient(dphi_dx, x)
 
-    # Residual loss (from eq. - simplify?)
+    # Residual loss (from book)
     L_residual = -D * d2phi_dx2 + Sigma_a * phi_pred - nu_Sigma_f * phi_pred - S
 
     # Boundary condition loss
@@ -64,10 +68,10 @@ def loss_function(y_true, y_pred):
 
     return mse_residual
 
-model = diffusion_PINN()
 
 # Compile model
 model.compile(loss=loss_function, optimizer='adam', run_eagerly=True)
+normal_neural_net.compile(loss=['MeanAbsoluteError'], optimizer='adam')
 
 
 # Define parameters for the problem
@@ -78,8 +82,10 @@ S = 2.0           # Source term - set as 2 for now
 L = 10.0          # Length of the domain
 
 # x is number of points for data (10 evenly spaced 1m apart for now)
-num_points = 10
+num_points = 20
 x = np.linspace(0, L, num_points)
+x_val_points = np.linspace(0, L, 100)
+
 
 # Generate training data
 def generate_training_data(x):
@@ -88,7 +94,9 @@ def generate_training_data(x):
 
     return x, phi_true
 
+
 x_train, phi_train_true = generate_training_data(x)
+x_test, phi_test = generate_training_data(x_val_points)
 
 
 
@@ -97,15 +105,38 @@ num_epochs = 1000  # YChange if necessary ~ did 1000 took roughly 1.5 hrs set as
 batch_size = 32
 
 history = model.fit(x_train, phi_train_true, epochs=num_epochs, batch_size=batch_size)
+history_nn = normal_neural_net.fit(x_train, phi_train_true, epochs=num_epochs, batch_size=batch_size)
 
 
-def loss_plotter():
+# Plot loss - MAE of ~ 3x10^-5
+# Want to look at r2 value next
+
+def loss_plotter(history):
     plt.plot(history.history['loss'])
     plt.title('Model Loss over Time')
     plt.xlabel('Epoch')
     plt.ylabel('Loss (MSE)')
     plt.show()
 
-loss_plotter()
+#plot original -- hidden for now
+
+#loss_plotter(history)
+#loss_plotter(history_nn)
+
+# Evaluate with test data
+values = []
+values_nn = []
+predicted_output = model.predict(x_test)
+predicted_output_nn = normal_neural_net.predict(x_test)
+for i in predicted_output:
+    values.append(i[0])
+
+for i in predicted_output_nn:
+    values_nn.append(i[0])
 
 
+plt.plot(x_test, phi_test, label='Analytical solution')
+plt.plot(x_test, values, label='PINN')
+plt.plot(x_test, values_nn, label='Traditional NN')
+plt.legend()
+plt.show()
