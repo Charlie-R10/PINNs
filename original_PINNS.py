@@ -82,7 +82,7 @@ S = 2.0           # Source term - set as 2 for now
 L = 10.0          # Length of the domain
 
 # x is number of points for data (10 evenly spaced 1m apart for now)
-num_points = 20
+num_points = 10
 x = np.linspace(0, L, num_points)
 x_val_points = np.linspace(0, L, 100)
 
@@ -101,7 +101,7 @@ x_test, phi_test = generate_training_data(x_val_points)
 
 
 # Train the model
-num_epochs = 1000  # YChange if necessary ~ did 1000 took roughly 1.5 hrs set as 10 for now
+num_epochs = 50  # YChange if necessary ~ did 1000 took roughly 1.5 hrs set as 10 for now
 batch_size = 32
 
 history = model.fit(x_train, phi_train_true, epochs=num_epochs, batch_size=batch_size)
@@ -118,7 +118,7 @@ def loss_plotter(history):
     plt.ylabel('Loss (MSE)')
     plt.show()
 
-#plot original -- hidden for now
+#plot original
 
 #loss_plotter(history)
 #loss_plotter(history_nn)
@@ -126,17 +126,13 @@ def loss_plotter(history):
 # Evaluate with test data
 values = []
 values_nn = []
-predicted_output = model.predict(x_test)
-predicted_output_nn = normal_neural_net.predict(x_test)
-for i in predicted_output:
-    values.append(i[0])
-
-for i in predicted_output_nn:
-    values_nn.append(i[0])
+print(x_train)
+print(phi_train_true)
+print(x_test)
 
 
 plt.plot(x_test, phi_test, label='Analytical solution')
-plt.plot(x_test, values, label='PINN')
-plt.plot(x_test, values_nn, label='Traditional NN')
+plt.plot(x_test, model.predict(x_test), label='PINN')
+plt.plot(x_test, normal_neural_net.predict(x_test), label='Traditional NN')
 plt.legend()
 plt.show()
